@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feed Lab Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF1EE;
+    --panel:#FFFFFF;
+    --ink:#1A1F1D;
+    --ink-soft:#5B655F;
+    --line:#D3D9D4;
+    --protein:#3D5A80;
+    --fibre:#5C7A52;
+    --fat:#B8863B;
+    --ash:#767671;
+    --afla:#A03A3A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:28px 28px;
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+  }
+  header{
+    padding:22px 24px 14px;
+    border-bottom:2px solid var(--ink);
+    background:var(--paper);
+  }
+  header h1{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:1.15rem;
+    letter-spacing:0.02em;
+    margin:0 0 2px;
+    text-transform:uppercase;
+  }
+  header p{
+    margin:0;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .wrap{
+    max-width:1000px;
+    margin:0 auto;
+    padding:20px 16px 60px;
+  }
+  .vials{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .vial{
+    flex:1 1 140px;
+    background:var(--panel);
+    border:1.5px solid var(--line);
+    border-top:6px solid var(--tc);
+    border-radius:4px;
+    padding:12px 12px 10px;
+    cursor:pointer;
+    text-align:left;
+    font-family:'IBM Plex Mono', monospace;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .vial:hover{ transform:translateY(-2px); }
+  .vial.active{
+    box-shadow:3px 3px 0 var(--tc);
+    border-color:var(--tc);
+  }
+  .vial .name{ font-size:0.92rem; font-weight:600; display:block; }
+  .vial .count{ font-size:0.72rem; color:var(--ink-soft); }
+
+  .panel{
+    background:var(--panel);
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    padding:18px 18px 20px;
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.95rem;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    margin:0 0 12px;
+    padding-bottom:8px;
+    border-bottom:1px dashed var(--line);
+    color:var(--tc);
+  }
+  .checklist{ list-style:none; margin:0; padding:0; }
+  .checklist li{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 4px; border-bottom:1px solid var(--paper);
+    font-size:0.92rem;
+  }
+  .checklist li.done span{ text-decoration:line-through; color:var(--ink-soft); }
+  .checklist input[type=checkbox]{ width:17px; height:17px; accent-color:var(--tc); flex:none; }
+  .checklist li span{ flex:1; }
+  .del-step{
+    background:none; border:none; color:var(--ink-soft); cursor:pointer; font-size:1rem; line-height:1; padding:2px 6px;
+  }
+  .del-step:hover{ color:var(--afla); }
+  .add-row{ display:flex; gap:8px; margin-top:10px; }
+  .add-row input{ flex:1; }
+  .reset-row{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .reset-row button{ font-size:0.75rem; }
+
+  input, select, textarea{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:0.9rem;
+    padding:8px 9px;
+    border:1.3px solid var(--line);
+    border-radius:3px;
+    background:#FCFCFB;
+    color:var(--ink);
+  }
+  textarea{ resize:vertical; min-height:52px; width:100%; }
+  button{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.82rem;
+    padding:8px 14px;
+    border:1.3px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:3px;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+  }
+  button.ghost{
+    background:transparent; color:var(--ink); border-color:var(--line);
+  }
+  button:hover{ opacity:0.85; }
+
+  .calc-fields{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  .calc-fields label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); display:block; margin-bottom:4px; }
+  .calc-fields input{ width:100%; }
+  .calc-output{
+    margin-top:14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85rem;
+    background:var(--paper);
+    border:1px dashed var(--line);
+    border-radius:4px;
+    padding:14px;
+    display:none;
+    white-space:pre-wrap;
+    line-height:1.6;
+  }
+  .calc-output.show{ display:block; }
+  .calc-output .result-line{
+    font-weight:700;
+    color:var(--tc);
+    font-size:0.95rem;
+    border-top:1px solid var(--line);
+    margin-top:8px;
+    padding-top:8px;
+    display:block;
+  }
+  .calc-output .insert-btn{ margin-top:12px; }
+
+  .log-form{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  .log-form .full{ grid-column:1 / -1; }
+  .log-form label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); display:block; margin-bottom:4px; }
+  .log-form .submit-row{ grid-column:1/-1; display:flex; justify-content:flex-end; margin-top:4px; }
+
+  .log-filters{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    padding:5px 10px;
+    border-radius:20px;
+    border:1.3px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    text-transform:uppercase;
+  }
+  .chip.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  .ledger{ list-style:none; margin:0; padding:0; }
+  .ledger li{
+    display:grid;
+    grid-template-columns:96px 64px 1fr 24px;
+    gap:10px;
+    align-items:start;
+    padding:10px 6px;
+    border-bottom:1px dashed var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.82rem;
+  }
+  .ledger li:last-child{ border-bottom:none; }
+  .ledger .tag{
+    display:inline-block;
+    padding:2px 6px;
+    border-radius:3px;
+    color:#fff;
+    background:var(--tc);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    width:fit-content;
+  }
+  .ledger .when{ color:var(--ink-soft); }
+  .ledger .desc{ font-family:'IBM Plex Sans', sans-serif; color:var(--ink); }
+  .ledger .rm{ background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:1rem; }
+  .ledger .rm:hover{ color:var(--afla); }
+  .empty{ color:var(--ink-soft); font-size:0.85rem; font-style:italic; padding:10px 4px; }
+
+  @media (max-width:640px){
+    .log-form{ grid-template-columns:1fr; }
+    .ledger li{ grid-template-columns:1fr 24px; }
+    .ledger .when{ grid-column:1/2; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Feed Lab Bench</h1>
+  <p>Protein · Fibre · Fat · Ash · Aflatoxin — testing to-dos &amp; weekly log</p>
+</header>
+
+<div class="wrap">
+
+  <div class="vials" id="vialNav"></div>
+
+  <div class="panel">
+    <h2 id="checklistTitle">Checklist</h2>
+    <ul class="checklist" id="checklist"></ul>
+    <div class="add-row">
+      <input type="text" id="newStepInput" placeholder="Add a step…">
+      <button onclick="addStep()">Add</button>
+    </div>
+    <div class="reset-row">
+      <span style="font-size:0.75rem;color:var(--ink-soft)" id="progressLabel"></span>
+      <button class="ghost" onclick="resetChecklist()">Reset checklist</button>
+    </div>
+  </div>
+
+  <div class="panel" id="normalityPanel" style="display:none;">
+    <h2 style="color:var(--protein)">Normality Calculator <span style="font-size:0.7rem;text-transform:none;letter-spacing:normal;color:var(--ink-soft);">— for standardizing the acid used in the protein test</span></h2>
+    <div class="calc-fields">
+      <div><label>Sample Weight (g)</label><input type="number" step="0.0001" id="norm_w"></div>
+      <div><label>Titration Value (mL)</label><input type="number" step="0.1" id="norm_v"></div>
+    </div>
+    <div class="submit-row" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+      <button class="ghost" onclick="clearNormality()">Clear</button>
+      <button onclick="runNormality()">Calculate</button>
+    </div>
+    <div id="normalityOutput" class="calc-output"></div>
+  </div>
+
+  <div class="panel">
+    <h2 id="calcTitle">Calculate result</h2>
+    <div class="calc-fields" id="calcFields"></div>
+    <div class="submit-row" id="calcButtons" style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+      <button class="ghost" onclick="clearCalc()">Clear</button>
+      <button onclick="runCalc()">Calculate</button>
+    </div>
+    <div id="calcOutput" class="calc-output"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Log a test</h2>
+    <div class="log-form">
+      <div>
+        <label>Test</label>
+        <select id="logTest"></select>
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="logDate">
+      </div>
+      <div>
+        <label>Time</label>
+        <input type="time" id="logTime">
+      </div>
+      <div class="full">
+        <label>Description</label>
+        <textarea id="logDesc" placeholder="Sample ID, batch, result notes…"></textarea>
+      </div>
+      <div class="submit-row">
+        <button onclick="addLog()">Save entry</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>This week's log</h2>
+    <div class="log-filters" id="logFilters"></div>
+    <ul class="ledger" id="ledger"></ul>
+  </div>
+
+</div>
+
+<script>
+const TESTS = [
+  {key:'protein',   label:'Protein',   color:'var(--protein)', steps:[
+    'Weigh sample into digestion tube','Add catalyst + sulfuric acid','Digest until clear (Kjeldahl)',
+    'Cool and dilute digest','Distill into boric acid receiver','Titrate with standard acid','Calculate %CP'
+  ],
+  calc:{
+    resultLabel:'Crude Protein',
+    denomKey:'w',
+    denomLabel:'Sample Weight',
+    fields:[
+      {key:'w',  label:'Sample Weight (g)', step:'0.0001'},
+      {key:'n',  label:'Normality of Acid, N', def:'0.1', step:'0.0001'},
+      {key:'vs', label:'Sample Titration Reading (mL)', step:'0.1'},
+      {key:'vb', label:'Blank Titration Reading (mL)', def:'0.0', step:'0.1'}
+    ],
+    formula:'Net Titration Volume = Sample Titration \u2212 Blank Titration\n%N = (Net Titration Volume \u00d7 N \u00d7 1.4007) / Sample Weight\n%CP = %N \u00d7 6.25',
+    compute(v){
+      const net = v.vs - v.vb;
+      const pctN = (net * v.n * 1.4007) / v.w;
+      const pctCP = pctN * 6.25;
+      const steps = [
+        `Net Titration Volume = Vs \u2212 Vb = ${v.vs} \u2212 ${v.vb} = ${net.toFixed(2)} mL`,
+        `%N = (Net Titration Volume \u00d7 N \u00d7 1.4007) / W = (${net.toFixed(2)} \u00d7 ${v.n} \u00d7 1.4007) / ${v.w} = ${pctN.toFixed(3)}%`,
+        `%CP = %N \u00d7 6.25 = ${pctN.toFixed(3)} \u00d7 6.25 = ${pctCP.toFixed(2)}%`
+      ];
+      return {steps, result:pctCP};
+    }
+  }},
+  {key:'fibre',     label:'Fibre',     color:'var(--fibre)', steps:[
+    'Weigh defatted sample','Acid digestion (dilute H2SO4)','Alkali digestion (dilute NaOH)',
+    'Filter and wash residue','Dry residue in oven','Ash residue in muffle furnace','Calculate %CF'
+  ],
+  calc:{
+    resultLabel:'Total Crude Fibre',
+    denomKey:'ws',
+    denomLabel:'Sample Weight',
+    fields:[
+      {key:'w1', label:'Dried Residue + Crucible, W1 (g)'},
+      {key:'w2', label:'Ash + Crucible after Ignition, W2 (g)'},
+      {key:'ws', label:'Sample Weight, Ws (g)'}
+    ],
+    formula:'% Crude Fibre = [(W1 \u2212 W2) / Ws] \u00d7 100',
+    compute(v){
+      const loss = v.w1 - v.w2;
+      const ratio = loss / v.ws;
+      const result = ratio * 100;
+      const steps = [
+        `W1 \u2212 W2 = ${v.w1} \u2212 ${v.w2} = ${fmt(loss)}`,
+        `(W1 \u2212 W2) / Ws = ${fmt(loss)} / ${v.ws} = ${fmt(ratio)}`,
+        `% Crude Fibre = ${fmt(ratio)} \u00d7 100 = ${fmt(result)}%`
+      ];
+      return {steps, result};
+    }
+  }},
+  {key:'fat',       label:'Fat',       color:'var(--fat)', steps:[
+    'Weigh sample into thimble','Load Soxhlet apparatus','Extract with solvent (ether)',
+    'Evaporate solvent from flask','Dry flask to constant weight','Calculate %EE (fat)'
+  ],
+  calc:{
+    resultLabel:'Total Ether Extract (Fat)',
+    denomKey:'ws',
+    denomLabel:'Sample Weight',
+    fields:[
+      {key:'w1', label:'Empty Flask Weight, W1 (g)'},
+      {key:'w2', label:'Flask + Extracted Fat, W2 (g)'},
+      {key:'ws', label:'Sample Weight, Ws (g)'}
+    ],
+    formula:'% Ether Extract = [(W2 \u2212 W1) / Ws] \u00d7 100',
+    compute(v){
+      const fatWeight = v.w2 - v.w1;
+      const ratio = fatWeight / v.ws;
+      const result = ratio * 100;
+      const steps = [
+        `W2 \u2212 W1 = ${v.w2} \u2212 ${v.w1} = ${fmt(fatWeight)}`,
+        `(W2 \u2212 W1) / Ws = ${fmt(fatWeight)} / ${v.ws} = ${fmt(ratio)}`,
+        `% Ether Extract = ${fmt(ratio)} \u00d7 100 = ${fmt(result)}%`
+      ];
+      return {steps, result};
+    }
+  }},
+  {key:'ash',       label:'Ash',       color:'var(--ash)', steps:[
+    'Weigh crucible + sample','Char sample on hot plate','Ignite in muffle furnace (550\u00b0C)',
+    'Cool in desiccator','Weigh ash residue','Calculate %ash'
+  ],
+  calc:{
+    resultLabel:'Total Ash',
+    denomKey:'ws',
+    denomLabel:'Sample Weight',
+    fields:[
+      {key:'w1', label:'Empty Utensil Weight, W1 (g)'},
+      {key:'ws', label:'Sample Weight, Ws (g)'},
+      {key:'w2', label:'Utensil + Ash Weight, W2 (g)'}
+    ],
+    formula:'% Total Ash = [(W2 \u2212 W1) / Ws] \u00d7 100',
+    compute(v){
+      const ashWeight = v.w2 - v.w1;
+      const ratio = ashWeight / v.ws;
+      const result = ratio * 100;
+      const steps = [
+        `W2 \u2212 W1 = ${v.w2} \u2212 ${v.w1} = ${fmt(ashWeight)}`,
+        `(W2 \u2212 W1) / Ws = ${fmt(ashWeight)} / ${v.ws} = ${fmt(ratio)}`,
+        `% Total Ash = ${fmt(ratio)} \u00d7 100 = ${fmt(result)}%`
+      ];
+      return {steps, result};
+    }
+  }},
+  {key:'aflatoxin', label:'Aflatoxin', color:'var(--afla)', steps:[
+    'Grind and homogenize sample','Extract with methanol/water','Clean up (immunoaffinity column)',
+    'Elute and prepare for reading','Run ELISA / HPLC','Record result vs regulatory limit'
+  ]},
+];
+
+const store = {
+  get(key, fallback){
+    try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch(e){ return fallback; }
+  },
+  set(key, val){
+    try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+  }
+};
+
+let checklists = store.get('feedlab_checklists', null);
+if(!checklists){
+  checklists = {};
+  TESTS.forEach(t => checklists[t.key] = t.steps.map(s => ({text:s, done:false})));
+  store.set('feedlab_checklists', checklists);
+}
+let logs = store.get('feedlab_logs', []);
+let activeTest = TESTS[0].key;
+let activeFilter = 'all';
+
+function saveChecklists(){ store.set('feedlab_checklists', checklists); }
+function saveLogs(){ store.set('feedlab_logs', logs); }
+
+function renderVials(){
+  const nav = document.getElementById('vialNav');
+  nav.innerHTML = '';
+  TESTS.forEach(t => {
+    const done = checklists[t.key].filter(s=>s.done).length;
+    const total = checklists[t.key].length;
+    const div = document.createElement('div');
+    div.className = 'vial' + (t.key === activeTest ? ' active' : '');
+    div.style.setProperty('--tc', t.color);
+    div.onclick = () => { activeTest = t.key; render(); };
+    div.innerHTML = `<span class="name">${t.label}</span><span class="count">${done}/${total} steps</span>`;
+    nav.appendChild(div);
+  });
+}
+
+function renderChecklist(){
+  const t = TESTS.find(x => x.key === activeTest);
+  document.getElementById('checklistTitle').textContent = t.label + ' — checklist';
+  document.getElementById('checklistTitle').style.color = t.color;
+  document.querySelector('.panel h2').style.setProperty('--tc', t.color);
+  document.documentElement.style.setProperty('--tc', t.color);
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = '';
+  checklists[t.key].forEach((step, i) => {
+    const li = document.createElement('li');
+    if(step.done) li.classList.add('done');
+    li.innerHTML = `<input type="checkbox" ${step.done?'checked':''}>
+      <span>${escapeHtml(step.text)}</span>
+      <button class="del-step" title="Remove step">✕</button>`;
+    li.querySelector('input').onchange = (e) => {
+      checklists[t.key][i].done = e.target.checked;
+      saveChecklists(); render();
+    };
+    li.querySelector('.del-step').onclick = () => {
+      checklists[t.key].splice(i,1);
+      saveChecklists(); render();
+    };
+    ul.appendChild(li);
+  });
+  const done = checklists[t.key].filter(s=>s.done).length;
+  document.getElementById('progressLabel').textContent = `${done} of ${checklists[t.key].length} complete`;
+}
+
+function addStep(){
+  const input = document.getElementById('newStepInput');
+  const val = input.value.trim();
+  if(!val) return;
+  checklists[activeTest].push({text:val, done:false});
+  input.value = '';
+  saveChecklists(); render();
+}
+
+function resetChecklist(){
+  checklists[activeTest].forEach(s => s.done = false);
+  saveChecklists(); render();
+}
+
+function renderLogForm(){
+  const sel = document.getElementById('logTest');
+  sel.innerHTML = TESTS.map(t => `<option value="${t.key}">${t.label}</option>`).join('');
+  sel.value = activeTest;
+  if(!document.getElementById('logDate').value){
+    const now = new Date();
+    document.getElementById('logDate').value = now.toISOString().slice(0,10);
+    document.getElementById('logTime').value = now.toTimeString().slice(0,5);
+  }
+}
+
+function addLog(){
+  const test = document.getElementById('logTest').value;
+  const date = document.getElementById('logDate').value;
+  const time = document.getElementById('logTime').value;
+  const desc = document.getElementById('logDesc').value.trim();
+  if(!date || !time){ alert('Please set a date and time.'); return; }
+  logs.push({
+    id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+    test, date, time, desc
+  });
+  logs.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+  saveLogs();
+  document.getElementById('logDesc').value = '';
+  renderLedger();
+  renderVials();
+}
+
+function removeLog(id){
+  logs = logs.filter(l => l.id !== id);
+  saveLogs(); renderLedger();
+}
+
+function renderFilters(){
+  const wrap = document.getElementById('logFilters');
+  wrap.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'chip' + (activeFilter==='all' ? ' active' : '');
+  allChip.textContent = 'All';
+  allChip.onclick = () => { activeFilter = 'all'; render(); };
+  wrap.appendChild(allChip);
+  TESTS.forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (activeFilter===t.key ? ' active' : '');
+    chip.textContent = t.label;
+    chip.onclick = () => { activeFilter = t.key; render(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderLedger(){
+  const ul = document.getElementById('ledger');
+  ul.innerHTML = '';
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().slice(0,10);
+
+  let visible = logs.filter(l => l.date >= weekAgoStr);
+  if(activeFilter !== 'all') visible = visible.filter(l => l.test === activeFilter);
+
+  if(visible.length === 0){
+    ul.innerHTML = '<li class="empty" style="display:block;grid-template-columns:none;">No entries in the last 7 days for this filter.</li>';
+    return;
+  }
+
+  visible.forEach(l => {
+    const t = TESTS.find(x => x.key === l.test);
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="when">${formatDate(l.date)}<br>${l.time}</span>
+      <span class="tag" style="--tc:${t.color}">${t.label}</span>
+      <span class="desc">${escapeHtml(l.desc) || '<span style=\"color:var(--ink-soft)\">— no description —</span>'}</span>
+      <button class="rm" title="Delete entry">✕</button>
+    `;
+    li.querySelector('.rm').onclick = () => removeLog(l.id);
+    ul.appendChild(li);
+  });
+}
+
+function formatDate(d){
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+}
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+function fmt(n){
+  if(typeof n !== 'number' || isNaN(n)) return '—';
+  return (Math.round(n * 10000) / 10000).toString();
+}
+
+function renderCalc(){
+  const t = TESTS.find(x => x.key === activeTest);
+  document.getElementById('normalityPanel').style.display = (t.key === 'protein') ? 'block' : 'none';
+  document.getElementById('calcTitle').textContent = t.label + ' — calculate result';
+  const wrap = document.getElementById('calcFields');
+  wrap.innerHTML = '';
+  document.getElementById('calcOutput').classList.remove('show');
+  document.getElementById('calcOutput').innerHTML = '';
+  document.getElementById('calcButtons').style.display = t.calc ? 'flex' : 'none';
+
+  if(!t.calc){
+    wrap.innerHTML = `<p class="empty" style="grid-column:1/-1;">No calculator set up for ${t.label} yet — log results manually below.</p>`;
+    return;
+  }
+
+  t.calc.fields.forEach(f => {
+    const div = document.createElement('div');
+    const stepAttr = f.step || 'any';
+    div.innerHTML = `<label>${f.label}</label><input type="number" step="${stepAttr}" id="calc_${f.key}" value="${f.def !== undefined ? f.def : ''}">`;
+    wrap.appendChild(div);
+  });
+  // live recalculation as values change, without alert interruptions
+  t.calc.fields.forEach(f => {
+    document.getElementById('calc_' + f.key).addEventListener('input', () => runCalc(true));
+  });
+}
+
+function runCalc(silent){
+  const t = TESTS.find(x => x.key === activeTest);
+  if(!t.calc) return;
+  const values = {};
+  for(const f of t.calc.fields){
+    const raw = document.getElementById('calc_' + f.key).value;
+    if(raw === ''){
+      if(silent){
+        document.getElementById('calcOutput').classList.remove('show');
+        return;
+      }
+      alert('Please fill in: ' + f.label);
+      return;
+    }
+    values[f.key] = parseFloat(raw);
+  }
+  if(t.calc.denomKey !== undefined && values[t.calc.denomKey] === 0){
+    const out = document.getElementById('calcOutput');
+    if(silent){ out.classList.remove('show'); return; }
+    alert((t.calc.denomLabel || 'That value') + ' cannot be zero.');
+    return;
+  }
+  const {steps, result, unit} = t.calc.compute(values);
+  const out = document.getElementById('calcOutput');
+  const unitLabel = unit || '%';
+  const finalValue = fmt(Math.round(result*100)/100);
+  out.innerHTML = `
+    <div><strong>Formula</strong><br>${escapeHtml(t.calc.formula).replace(/\n/g,'<br>')}</div>
+    <div style="margin-top:10px;"><strong>Step-by-step</strong><br>${steps.map(s => escapeHtml(s)).join('<br>')}</div>
+    <span class="result-line">${t.calc.resultLabel} = ${finalValue} ${unitLabel}</span>
+    <button class="ghost insert-btn" id="insertResultBtn">Insert into log description</button>
+  `;
+  out.classList.add('show');
+  document.getElementById('insertResultBtn').addEventListener('click', () => {
+    insertCalcResult(finalValue, unitLabel, t.label);
+  });
+}
+
+function clearCalc(){
+  const t = TESTS.find(x => x.key === activeTest);
+  if(!t.calc) return;
+  t.calc.fields.forEach(f => {
+    document.getElementById('calc_' + f.key).value = f.def !== undefined ? f.def : '';
+  });
+  document.getElementById('calcOutput').classList.remove('show');
+  document.getElementById('calcOutput').innerHTML = '';
+}
+
+function insertCalcResult(value, unit, label){
+  const desc = document.getElementById('logDesc');
+  const line = `${label} result: ${value} ${unit}`;
+  desc.value = desc.value ? desc.value + '\n' + line : line;
+  document.getElementById('logTest').value = activeTest;
+  desc.scrollIntoView({behavior:'smooth', block:'center'});
+  desc.focus();
+}
+
+function runNormality(silent){
+  const wEl = document.getElementById('norm_w');
+  const vEl = document.getElementById('norm_v');
+  const out = document.getElementById('normalityOutput');
+  if(wEl.value === '' || vEl.value === ''){
+    if(silent){ out.classList.remove('show'); return; }
+    alert('Please fill in both Sample Weight and Titration Value.');
+    return;
+  }
+  const w = parseFloat(wEl.value);
+  const v = parseFloat(vEl.value);
+  if(v === 0){
+    if(silent){ out.classList.remove('show'); return; }
+    alert('Titration Value cannot be zero.');
+    return;
+  }
+  const numerator = w * 1000;
+  const denominator = v * 52.995;
+  const n = numerator / denominator;
+  const finalValue = n.toFixed(4);
+  out.innerHTML = `
+    <div><strong>Formula</strong><br>Normality = (Sample Weight \u00d7 1000) / (Titration Value \u00d7 52.995)</div>
+    <div style="margin-top:10px;"><strong>Step-by-step</strong><br>
+      Sample Weight \u00d7 1000 = ${w} \u00d7 1000 = ${fmt(numerator)}<br>
+      Titration Value \u00d7 52.995 = ${v} \u00d7 52.995 = ${fmt(denominator)}<br>
+      Normality = ${fmt(numerator)} / ${fmt(denominator)} = ${finalValue} N
+    </div>
+    <span class="result-line">Normality (N) = ${finalValue}</span>
+    <button class="ghost insert-btn" id="useNormalityBtn">Use as Normality of Acid in Protein calculator</button>
+  `;
+  out.classList.add('show');
+  document.getElementById('useNormalityBtn').addEventListener('click', () => {
+    activeTest = 'protein';
+    render();
+    const nField = document.getElementById('calc_n');
+    if(nField){
+      nField.value = finalValue;
+      nField.dispatchEvent(new Event('input'));
+      nField.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  });
+}
+
+function clearNormality(){
+  document.getElementById('norm_w').value = '';
+  document.getElementById('norm_v').value = '';
+  const out = document.getElementById('normalityOutput');
+  out.classList.remove('show');
+  out.innerHTML = '';
+}
+
+document.getElementById('norm_w').addEventListener('input', () => runNormality(true));
+document.getElementById('norm_v').addEventListener('input', () => runNormality(true));
+
+function render(){
+  renderVials();
+  renderChecklist();
+  renderCalc();
+  renderLogForm();
+  renderFilters();
+  renderLedger();
+}
+
+render();
+</script>
+</body>
+</html>
